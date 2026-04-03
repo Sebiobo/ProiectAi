@@ -1,0 +1,27 @@
+volumes:
+  n8n_data:
+
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n_local
+    restart: always
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+
+  frontend:
+    build: ./ProiectAi/Frontend
+    container_name: tutor_frontend
+    restart: always
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./ProiectAi/Frontend:/app 
+      - /app/node_modules

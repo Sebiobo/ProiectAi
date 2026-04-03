@@ -1,48 +1,38 @@
-/* src/index.css */
 @import "tailwindcss";
 
-/* Definirea temei de culori inspirată din referință */
-@layer base {
-  :root {
-    --background: #110121; /* Negru-mov foarte închis pentru fundal */
-    --foreground: #f5f5f5;
-    --card: #1a0b2e; /* Mov-închis pentru containere/sidebar */
-    --accent: #d946ef; /* Magenta electric pentru butoane/glow */
-    --accent-foreground: #ffffff;
-  }
+/* Animații personalizate */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: 'Inter', system-ui, sans-serif;
-  overflow: hidden; /* Previne scroll-ul pe tot corpul site-ului */
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-/* Animația fină de intrare a mesajelor */
-@keyframes slideUpAndFade {
-  from { 
-    opacity: 0; 
-    transform: translateY(12px); 
-  }
-  to { 
-    opacity: 1; 
-    transform: translateY(0); 
-  }
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-out forwards;
 }
 
-.animate-message {
-  animation: slideUpAndFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.animate-slideDown {
+  animation: slideDown 0.3s ease-out forwards;
 }
 
-/* Custom Scrollbar - subțire și asortat */
+/* Stiluri globale pentru scrollbar (Cyberpunk style) */
 ::-webkit-scrollbar {
-  width: 5px;
+  width: 4px;
 }
+
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #000000;
 }
+
 ::-webkit-scrollbar-thumb {
-  background-color: #3b1f66;
+  background: #1f1f1f;
   border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ff00ff; /* Acesta este magenta pur HEX */
 }

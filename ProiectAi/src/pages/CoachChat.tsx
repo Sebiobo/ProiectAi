@@ -1,75 +1,37 @@
-import { useState } from 'react';
-import './CoachChat.css'; // Am importat fișierul de CSS creat de tine
-
-const MOCK_ANSWERS: Record<string, string> = {
-  "salut": "Salut! Sunt AI Coach-ul tău. Te pot ajuta să identifici materiile potrivite pentru tine. Ce te pasionează?",
-  "vreau sa fac site-uri": "Super! Atunci îți recomand să te concentrezi pe materiile: Programare Web, Structuri de Date și Baze de Date.",
-  "mi se pare greu la mate": "E perfect normal! Matematica cere exercițiu. Încearcă să te axezi pe algebra liniară, te va ajuta mult și la algoritmii de AI mai târziu.",
-};
+import Sidebar from '../components/sidebar/Sidebar';
+import MessageArea from '../components/chat/MessageArea';
+import ChatInput from '../components/chat/ChatInput';
 
 export default function CoachChat() {
-  const [messages, setMessages] = useState([
-    { sender: 'ai', text: 'Salut! Sunt asistentul tău virtual. Cu ce te pot ajuta astăzi?' }
-  ]);
-  const [inputValue, setInputValue] = useState('');
-
-  const handleSendMessage = () => {
-    if (inputValue.trim() === '') return;
-
-    const newMessages = [...messages, { sender: 'student', text: inputValue }];
-    setMessages(newMessages);
-
-    const lowerCaseInput = inputValue.toLowerCase().trim();
-    const aiResponse = MOCK_ANSWERS[lowerCaseInput] || "Scuze, momentan sunt în faza de testare și știu să răspund doar la anumite întrebări (ex: 'salut', 'vreau sa fac site-uri').";
-
-    setTimeout(() => {
-      setMessages((prevMessages) => [
-        ...prevMessages, 
-        { sender: 'ai', text: aiResponse }
-      ]);
-    }, 500);
-
-    setInputValue('');
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleSendMessage();
-    }
-  };
-
   return (
-    <div className="chat-container">
-      <h2 className="chat-title">AI Coach Chat</h2>
+    // Layout-ul global flexibil, ecran complet, fundal negru profund
+    <div className="flex h-screen bg-[#000000] text-[#ededed] font-sans overflow-hidden antialiased">
       
-      <div className="messages-area">
-        {messages.map((msg, index) => (
-          <div 
-            key={index} 
-            // Aici folosim un template literal pentru a pune clasa de bază + clasa specifică sender-ului
-            className={`message-bubble ${msg.sender === 'student' ? 'message-student' : 'message-ai'}`}
-          >
-            {msg.text}
-          </div>
-        ))}
-      </div>
+      {/* Bara Laterală Stânga */}
+      <Sidebar />
 
-      <div className="input-area">
-        <input 
-          type="text" 
-          className="chat-input"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeyPress}
-          placeholder="Scrie un mesaj..." 
-        />
-        <button 
-          className="chat-send-btn"
-          onClick={handleSendMessage}
-        >
-          Trimite
-        </button>
+      {/* Zona principală din Dreapta */}
+      <div className="flex-1 flex flex-col relative h-full bg-[#000000]">
+        
+        {/* Header-ul minimalist al zonei de chat */}
+        <header className="flex items-center justify-between px-6 py-4 border-b border-[#1f1f1f]">
+          <h2 className="text-sm font-medium text-[#888] tracking-tight">Terminal Conexiune AI</h2>
+          {/* Aici putem pune în viitor setări de model (ex: GPT-4, Claude 3) */}
+          <div className="px-2 py-1 bg-[#111] border border-[#222] rounded text-[10px] font-bold text-[#666]">
+            MODEL: COACH-V1
+          </div>
+        </header>
+
+        {/* Zona dinamică unde se desenează conversația */}
+        <MessageArea />
+
+        {/* Zona unde utilizatorul tastează și invocă șabloanele */}
+        <div className="p-6 pt-2 bg-linear-to-t from-[#000000] via-[#000000] to-transparent shrink-0">
+          <ChatInput />
+        </div>
+        
       </div>
+      
     </div>
   );
 }

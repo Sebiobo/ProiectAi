@@ -12,38 +12,56 @@ export default function ChatInput() {
   const addMessage = useChatStore((state) => state.addMessage);
   const updateMessageStatus = useChatStore((state) => state.updateMessageStatus);
   const updateMessageContent = useChatStore((state) => state.updateMessageContent);
+  // --- NOU: Aducem funcția care deschide panoul ---
+  const openArtifact = useChatStore((state) => state.openArtifact);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim() || !activeChatId) return;
 
-    // 1. Adăugăm mesajul utilizatorului
     const currentLeafId = activeChat?.currentLeafId || null;
     const userMsgId = addMessage(activeChatId, text, 'user', currentLeafId);
     setText('');
 
-    // 2. Adăugăm mesajul AI-ului (inițial în starea 'thinking' cu text gol)
     const aiMsgId = addMessage(activeChatId, '', 'ai', userMsgId);
 
-    // 3. SIMULARE API CALL (așteptăm 2 secunde ca să vedem pașii de gândire)
+    // 3. SIMULARE API CALL
     setTimeout(() => {
-      // Un text suficient de lung ca să vedem efectul fain de typing
-      const fakeResponse = "Am analizat solicitarea ta în sistem. Răspunsul este pregătit. Aceasta este o demonstrație a efectului de streaming în timp real, exact cum funcționează un AI premium. Cum te pot ajuta mai departe?";
+      // Mesajul care se va scrie în stânga
+      const fakeResponse = "Am procesat solicitarea ta. Componenta React pe care ai cerut-o este generată și disponibilă în panoul de lucru alăturat. Poți edita codul direct acolo sau îl poți copia în clipboard-ul tău.";
       
-      // Punem textul și schimbăm starea pe 'done' ca să pornească efectul de scriere literă cu literă
       updateMessageContent(activeChatId, aiMsgId, fakeResponse);
       updateMessageStatus(activeChatId, aiMsgId, 'done');
-    }, 2500); // 2.5 secunde de "gândire"
+
+      // --- NOU: Deschidem panoul în dreapta instantaneu ---
+      openArtifact({
+        title: "CyberButton.tsx",
+        language: "typescript",
+        content: `import React from 'react';
+
+export default function CyberButton() {
+  return (
+    <button className="relative px-6 py-3 font-black text-white group">
+      <span className="absolute inset-0 w-full h-full transition duration-300 transform -translate-x-1 -translate-y-1 bg-magenta-500 ease opacity-80 group-hover:translate-x-0 group-hover:translate-y-0"></span>
+      <span className="absolute inset-0 w-full h-full transition duration-300 transform translate-x-1 translate-y-1 bg-blue-500 ease opacity-80 group-hover:translate-x-0 group-hover:translate-y-0"></span>
+      <span className="relative z-10 block px-6 py-3 bg-[#0a0a0a] border border-white/10 group-hover:border-magenta-500 transition-colors">
+        INITIALIZE SYSTEM
+      </span>
+    </button>
+  );
+}`
+      });
+
+    }, 2500);
   };
 
-  // Dacă nu avem un chat activ, nu afișăm bara
   if (!activeChatId) return null;
 
   return (
-    <div className="p-4 bg-black border-t border-white/5 relative z-10">
+    <div className="p-4 bg-black border-t border-[#1f1f1f] relative z-10 rounded-2xl mx-4 mb-4">
       <form 
         onSubmit={handleSubmit} 
-        className="max-w-4xl mx-auto relative group flex items-center bg-[#0a0a0a] border border-white/10 rounded-2xl focus-within:border-magenta-500/50 transition-colors shadow-2xl"
+        className="max-w-4xl mx-auto relative group flex items-center bg-[#0a0a0a] border border-[#222] rounded-2xl focus-within:border-magenta-500/50 transition-colors shadow-2xl"
       >
         <div className="pl-4 pr-2 text-[#444] group-focus-within:text-magenta-500 transition-colors">
           <Terminal size={18} />
@@ -54,7 +72,7 @@ export default function ChatInput() {
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Scrie o comandă pentru Neural AI..."
-          className="w-full bg-transparent text-white text-sm py-4 outline-none placeholder:text-[#333]"
+          className="w-full bg-transparent text-white text-sm py-4 outline-none placeholder:text-[#444]"
         />
         
         <button
@@ -65,7 +83,7 @@ export default function ChatInput() {
           <Send size={18} />
         </button>
       </form>
-      <div className="text-center mt-2">
+      <div className="text-center mt-3">
         <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-[#333]">Neural Engine v4.0 Active</span>
       </div>
     </div>

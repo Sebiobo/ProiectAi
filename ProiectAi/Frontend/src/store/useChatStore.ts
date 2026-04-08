@@ -27,12 +27,25 @@ export interface Folder {
   color?: string;
 }
 
+// --- NOU: Adăugăm interfața pentru panoul de lucru (Artifact) ---
+export interface Artifact {
+  title: string;
+  content: string;
+  language: string;
+}
+
 interface ChatState {
   // --- AUTH STATE ---
   isAuthenticated: boolean;
   user: { username: string } | null;
   login: (username: string, password: string) => boolean;
   logout: () => void;
+
+  // --- WORKSPACE (ARTIFACT) STATE ---
+  activeArtifact: Artifact | null;
+  openArtifact: (artifact: Artifact) => void;
+  closeArtifact: () => void;
+  updateArtifactContent: (newContent: string) => void;
 
   // --- CHAT STATE ---
   chats: Record<string, Chat>;
@@ -60,6 +73,14 @@ export const useChatStore = create<ChatState>((set) => ({
     return false;
   },
   logout: () => set({ isAuthenticated: false, user: null }),
+
+  // --- NOU: Implementare Workspace ---
+  activeArtifact: null,
+  openArtifact: (artifact) => set({ activeArtifact: artifact }),
+  closeArtifact: () => set({ activeArtifact: null }),
+  updateArtifactContent: (newContent) => set((state) => ({
+    activeArtifact: state.activeArtifact ? { ...state.activeArtifact, content: newContent } : null
+  })),
 
   // Implementare Chat
   chats: {},

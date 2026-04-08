@@ -1,135 +1,73 @@
-import { useState, useRef } from 'react'; // AM REZOLVAT AICI: Am șters useEffect
-import { Send, Sparkles, Zap, BookOpen, Code, X } from 'lucide-react';
+import React, { useState } from 'react';
 import { useChatStore } from '../../store/useChatStore';
-import { simulateAIResponse } from '../../services/aiService';
-
-const TEMPLATES = [
-  { id: 't1', icon: BookOpen, command: '/explică', label: 'Explică simplu', text: 'Explică următorul concept ca și cum aș avea 10 ani: ' },
-  { id: 't2', icon: Zap, command: '/rezumă', label: 'Rezumat rapid', text: 'Extrage cele mai importante 3 idei din următorul text: \n\n' },
-  { id: 't3', icon: Code, command: '/cod', label: 'Exemplu de cod', text: 'Scrie un exemplu de cod în React/TS pentru: ' },
-  { id: 't4', icon: Sparkles, command: '/formal', label: 'Ton profesional', text: 'Rescrie următorul mesaj într-un ton formal, academic: \n\n' },
-];
+import { Send, Terminal } from 'lucide-react';
 
 export default function ChatInput() {
   const [text, setText] = useState('');
-  const [showTemplates, setShowTemplates] = useState(false);
+  const activeChatId = useChatStore((state) => state.activeChatId);
+  const activeChat = useChatStore((state) => 
+    activeChatId ? state.chats[activeChatId] : null
+  );
   
   const addMessage = useChatStore((state) => state.addMessage);
-  const activeChatId = useChatStore((state) => state.activeChatId);
-  const currentLeafId = useChatStore((state) => state.chats[state.activeChatId || '']?.currentLeafId || null);
+  const updateMessageStatus = useChatStore((state) => state.updateMessageStatus);
+  const updateMessageContent = useChatStore((state) => state.updateMessageContent);
 
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-
-  const autoResize = () => {
-    if (inputRef.current) {
-      inputRef.current.style.height = 'auto';
-      inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 150)}px`;
-    }
-  };
-
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-    setText(value);
-    autoResize();
-
-    if (value === '/') {
-      setShowTemplates(true);
-    } else if (value === '' || !value.startsWith('/')) {
-      setShowTemplates(false);
-    }
-  };
-
-  const applyTemplate = (templateText: string) => {
-    setText(templateText);
-    setShowTemplates(false);
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
-  };
-
-  // AM REZOLVAT AICI: Legătura cu Streaming-ul AI
-  const handleSend = async () => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     if (!text.trim() || !activeChatId) return;
-    
-    const currentInput = text;
-    const userMessageId = addMessage(activeChatId, currentInput, 'user', currentLeafId);
-    
+
+    // 1. Adăugăm mesajul utilizatorului
+    const currentLeafId = activeChat?.currentLeafId || null;
+    const userMsgId = addMessage(activeChatId, text, 'user', currentLeafId);
     setText('');
-    setShowTemplates(false);
-    if (inputRef.current) {
-      inputRef.current.style.height = 'auto';
-    }
 
-    await simulateAIResponse(activeChatId, currentInput, userMessageId);
+    // 2. Adăugăm mesajul AI-ului (inițial în starea 'thinking' cu text gol)
+    const aiMsgId = addMessage(activeChatId, '', 'ai', userMsgId);
+
+    // 3. SIMULARE API CALL (așteptăm 2 secunde ca să vedem pașii de gândire)
+    setTimeout(() => {
+      // Un text suficient de lung ca să vedem efectul fain de typing
+      const fakeResponse = "Am analizat solicitarea ta în sistem. Răspunsul este pregătit. Aceasta este o demonstrație a efectului de streaming în timp real, exact cum funcționează un AI premium. Cum te pot ajuta mai departe?";
+      
+      // Punem textul și schimbăm starea pe 'done' ca să pornească efectul de scriere literă cu literă
+      updateMessageContent(activeChatId, aiMsgId, fakeResponse);
+      updateMessageStatus(activeChatId, aiMsgId, 'done');
+    }, 2500); // 2.5 secunde de "gândire"
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
+  // Dacă nu avem un chat activ, nu afișăm bara
+  if (!activeChatId) return null;
 
   return (
-    <div className="relative w-full max-w-3xl mx-auto">
-      {showTemplates && (
-        <div className="absolute bottom-full mb-3 left-0 w-full bg-[#1a1a1a] border border-[#333] rounded-xl shadow-2xl overflow-hidden animate-fadeIn z-50">
-          <div className="px-4 py-2 border-b border-[#333] flex items-center justify-between bg-[#111]">
-            <span className="text-xs font-semibold text-[#888] uppercase tracking-wider">Șabloane Rapide</span>
-            <button onClick={() => setShowTemplates(false)} className="text-[#666] hover:text-white">
-              <X size={14} />
-            </button>
-          </div>
-          <div className="p-2 space-y-1">
-            {TEMPLATES.map((tpl) => {
-              const Icon = tpl.icon;
-              return (
-                <button
-                  key={tpl.id}
-                  onClick={() => applyTemplate(tpl.text)}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#2a2a2a] text-left transition-colors group"
-                >
-                  <div className="bg-[#222] p-1.5 rounded-md text-magenta-500 group-hover:text-magenta-400 group-hover:bg-[#333] transition-colors">
-                    <Icon size={16} />
-                  </div>
-                  <div>
-                    <div className="text-sm text-[#ededed] font-medium">{tpl.command}</div>
-                    <div className="text-xs text-[#666]">{tpl.label}</div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+    <div className="p-4 bg-black border-t border-white/5 relative z-10">
+      <form 
+        onSubmit={handleSubmit} 
+        className="max-w-4xl mx-auto relative group flex items-center bg-[#0a0a0a] border border-white/10 rounded-2xl focus-within:border-magenta-500/50 transition-colors shadow-2xl"
+      >
+        <div className="pl-4 pr-2 text-[#444] group-focus-within:text-magenta-500 transition-colors">
+          <Terminal size={18} />
         </div>
-      )}
-
-      <div className="relative flex items-end bg-[#0a0a0a] border border-[#262626] rounded-2xl focus-within:border-[#555] focus-within:shadow-[0_0_15px_rgba(255,255,255,0.05)] transition-all">
-        <button className="p-3 mb-1 ml-1 text-[#666] hover:text-[#ededed] transition-colors">
-          <Sparkles size={20} />
-        </button>
-
-        <textarea
-          ref={inputRef}
+        
+        <input
+          type="text"
           value={text}
-          onChange={handleTextChange}
-          onKeyDown={handleKeyDown}
-          placeholder="Scrie '/' pentru șabloane, sau pune o întrebare..."
-          className="flex-1 max-h-40 bg-transparent outline-none text-sm py-4 px-2 text-[#ededed] placeholder:text-[#444] resize-none overflow-y-auto custom-scrollbar"
-          rows={1}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Scrie o comandă pentru Neural AI..."
+          className="w-full bg-transparent text-white text-sm py-4 outline-none placeholder:text-[#333]"
         />
-
+        
         <button
-          onClick={handleSend}
+          type="submit"
           disabled={!text.trim()}
-          className="p-3 mb-1 mr-1 text-[#888] hover:text-white transition-colors disabled:opacity-30 disabled:hover:text-[#888]"
+          className="m-2 p-2 rounded-xl bg-white text-black hover:bg-magenta-500 hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-black transition-all active:scale-95"
         >
-          <Send size={20} />
+          <Send size={18} />
         </button>
+      </form>
+      <div className="text-center mt-2">
+        <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-[#333]">Neural Engine v4.0 Active</span>
       </div>
-
-      <p className="text-[10px] text-center text-[#444] mt-3 tracking-wide">
-        Sistem bazat pe AI. Informațiile generate trebuie verificate.
-      </p>
     </div>
   );
 }

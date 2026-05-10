@@ -15,6 +15,8 @@ export interface Chat {
   id: string;
   title: string;
   folderId: string | null;
+  year: string | null;
+  subject: string | null;
   messages: Record<string, MessageNode>;
   currentLeafId: string | null;
   createdAt: number;
@@ -27,7 +29,6 @@ export interface Folder {
   color?: string;
 }
 
-// --- NOU: Adăugăm interfața pentru panoul de lucru (Artifact) ---
 export interface Artifact {
   title: string;
   content: string;
@@ -40,6 +41,12 @@ interface ChatState {
   user: { username: string } | null;
   login: (username: string, password: string) => boolean;
   logout: () => void;
+
+  // --- ACADEMIC CONTEXT STATE ---
+  selectedYear: string;
+  selectedSubject: string | null;
+  setSelectedYear: (year: string) => void;
+  setSelectedSubject: (subject: string | null) => void;
 
   // --- WORKSPACE (ARTIFACT) STATE ---
   activeArtifact: Artifact | null;
@@ -54,7 +61,7 @@ interface ChatState {
 
   setActiveChat: (chatId: string) => void;
   createFolder: (name: string) => void;
-  createChat: (folderId?: string | null) => string;
+  createChat: (folderId?: string | null, year?: string | null, subject?: string | null) => string;
   addMessage: (chatId: string, content: string, role: Role, parentId: string | null) => string;
   updateMessageStatus: (chatId: string, messageId: string, status: MessageNode['status']) => void;
   updateMessageContent: (chatId: string, messageId: string, newContent: string) => void;
@@ -62,7 +69,7 @@ interface ChatState {
 }
 
 export const useChatStore = create<ChatState>((set) => ({
-  // Implementare Auth
+  // --- AUTH ---
   isAuthenticated: false,
   user: null,
   login: (username, password) => {
@@ -74,7 +81,13 @@ export const useChatStore = create<ChatState>((set) => ({
   },
   logout: () => set({ isAuthenticated: false, user: null }),
 
-  // --- NOU: Implementare Workspace ---
+  // --- ACADEMIC CONTEXT ---
+  selectedYear: '1',
+  selectedSubject: null,
+  setSelectedYear: (year) => set({ selectedYear: year, selectedSubject: null }),
+  setSelectedSubject: (subject) => set({ selectedSubject: subject }),
+
+  // --- WORKSPACE ---
   activeArtifact: null,
   openArtifact: (artifact) => set({ activeArtifact: artifact }),
   closeArtifact: () => set({ activeArtifact: null }),
@@ -82,11 +95,11 @@ export const useChatStore = create<ChatState>((set) => ({
     activeArtifact: state.activeArtifact ? { ...state.activeArtifact, content: newContent } : null
   })),
 
-  // Implementare Chat
+  // --- CHAT ---
   chats: {},
   folders: {
-    'folder-1': { id: 'folder-1', name: 'Facultate - Proiecte' },
-    'folder-2': { id: 'folder-2', name: 'Învățare AI' }
+    'folder-1': { id: 'folder-1', name: 'Sesiuni Salvo' },
+    'folder-2': { id: 'folder-2', name: 'Arhivă' }
   },
   activeChatId: null,
 
@@ -99,12 +112,14 @@ export const useChatStore = create<ChatState>((set) => ({
     }));
   },
 
-  createChat: (folderId = null) => {
+  createChat: (folderId = null, year = null, subject = null) => {
     const id = crypto.randomUUID();
     const newChat: Chat = {
       id,
       title: 'Conversație nouă',
       folderId,
+      year,
+      subject,
       messages: {},
       currentLeafId: null,
       createdAt: Date.now(),

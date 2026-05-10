@@ -1,90 +1,140 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useChatStore } from '../../store/useChatStore';
-import { Send, Terminal } from 'lucide-react';
+import { simulateAIResponse } from '../../services/aiService';
+import { Send, Terminal, Sparkles, Paperclip, X, FileText, Image as ImageIcon } from 'lucide-react';
 
 export default function ChatInput() {
   const [text, setText] = useState('');
-  const activeChatId = useChatStore((state) => state.activeChatId);
-  const activeChat = useChatStore((state) => 
-    activeChatId ? state.chats[activeChatId] : null
-  );
-  
-  const addMessage = useChatStore((state) => state.addMessage);
-  const updateMessageStatus = useChatStore((state) => state.updateMessageStatus);
-  const updateMessageContent = useChatStore((state) => state.updateMessageContent);
-  // --- NOU: Aducem funcția care deschide panoul ---
-  const openArtifact = useChatStore((state) => state.openArtifact);
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const activeChatId = useChatStore((state) => state.activeChatId);
+  const activeChat = useChatStore((state) => activeChatId ? state.chats[activeChatId] : null);
+  const addMessage = useChatStore((state) => state.addMessage);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newFiles = Array.from(e.target.files);
+      setAttachedFiles((prev) => [...prev, ...newFiles]);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setAttachedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text.trim() || !activeChatId) return;
+    if ((!text.trim() && attachedFiles.length === 0) || !activeChatId) return;
 
     const currentLeafId = activeChat?.currentLeafId || null;
-    const userMsgId = addMessage(activeChatId, text, 'user', currentLeafId);
+    
+    // Includem informații despre fișiere în textul mesajului (pentru simulare)
+    let messageContent = text;
+    if (attachedFiles.length > 0) {
+      const fileList = attachedFiles.map(f => `[Fișier: ${f.name}]`).join(' ');
+      messageContent = `${messageContent}\n\n*Atașamente: ${fileList}*`.trim();
+    }
+
+    const userMsgId = addMessage(activeChatId, messageContent, 'user', currentLeafId);
+    
+    // Resetăm input-ul și fișierele
     setText('');
+    setAttachedFiles([]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
 
-    const aiMsgId = addMessage(activeChatId, '', 'ai', userMsgId);
-
-    // 3. SIMULARE API CALL
-    setTimeout(() => {
-      // Mesajul care se va scrie în stânga
-      const fakeResponse = "Am procesat solicitarea ta. Componenta React pe care ai cerut-o este generată și disponibilă în panoul de lucru alăturat. Poți edita codul direct acolo sau îl poți copia în clipboard-ul tău.";
-      
-      updateMessageContent(activeChatId, aiMsgId, fakeResponse);
-      updateMessageStatus(activeChatId, aiMsgId, 'done');
-
-      // --- NOU: Deschidem panoul în dreapta instantaneu ---
-      openArtifact({
-        title: "CyberButton.tsx",
-        language: "typescript",
-        content: `import React from 'react';
-
-export default function CyberButton() {
-  return (
-    <button className="relative px-6 py-3 font-black text-white group">
-      <span className="absolute inset-0 w-full h-full transition duration-300 transform -translate-x-1 -translate-y-1 bg-magenta-500 ease opacity-80 group-hover:translate-x-0 group-hover:translate-y-0"></span>
-      <span className="absolute inset-0 w-full h-full transition duration-300 transform translate-x-1 translate-y-1 bg-blue-500 ease opacity-80 group-hover:translate-x-0 group-hover:translate-y-0"></span>
-      <span className="relative z-10 block px-6 py-3 bg-[#0a0a0a] border border-white/10 group-hover:border-magenta-500 transition-colors">
-        INITIALIZE SYSTEM
-      </span>
-    </button>
-  );
-}`
-      });
-
-    }, 2500);
+    await simulateAIResponse(activeChatId, text, userMsgId);
   };
 
   if (!activeChatId) return null;
 
   return (
-    <div className="p-4 bg-black border-t border-[#1f1f1f] relative z-10 rounded-2xl mx-4 mb-4">
+    <div className="max-w-4xl mx-auto w-full relative z-20">
       <form 
         onSubmit={handleSubmit} 
-        className="max-w-4xl mx-auto relative group flex items-center bg-[#0a0a0a] border border-[#222] rounded-2xl focus-within:border-magenta-500/50 transition-colors shadow-2xl"
+        className="relative group flex flex-col bg-zinc-900 border border-zinc-800 rounded-2xl focus-within:border-zinc-700 transition-all shadow-2xl overflow-hidden"
       >
-        <div className="pl-4 pr-2 text-[#444] group-focus-within:text-magenta-500 transition-colors">
-          <Terminal size={18} />
+        {/* Zona de previzualizare fișiere atașate */}
+        {attachedFiles.length > 0 && (
+          <div className="flex flex-wrap gap-2 p-3 bg-zinc-950/50 border-b border-zinc-800/50">
+            {attachedFiles.map((file, idx) => (
+              <div 
+                key={`${file.name}-${idx}`}
+                className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg animate-in fade-in slide-in-from-bottom-1"
+              >
+                {file.type.startsWith('image/') ? (
+                  <ImageIcon size={14} className="text-zinc-500" />
+                ) : (
+                  <FileText size={14} className="text-zinc-500" />
+                )}
+                <span className="text-[11px] font-medium text-zinc-300 max-w-[150px] truncate">
+                  {file.name}
+                </span>
+                <button 
+                  type="button"
+                  onClick={() => removeFile(idx)}
+                  className="hover:text-red-400 transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center px-2 py-2">
+          {/* Buton Upload */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="p-3 text-zinc-600 hover:text-zinc-300 transition-colors"
+            title="Atașează fișier (PDF, Image, Text)"
+          >
+            <Paperclip size={18} />
+          </button>
+          
+          <input 
+            type="file" 
+            multiple 
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            className="hidden"
+            accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.ts,.tsx,.js,.jsx"
+          />
+
+          <div className="h-6 w-px bg-zinc-800 mx-1" />
+
+          <div className="pl-3 pr-2 text-zinc-600 group-focus-within:text-zinc-400 transition-colors">
+            <Terminal size={18} />
+          </div>
+          
+          <input
+            type="text"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Încarcă un curs sau pune o întrebare..."
+            className="flex-1 bg-transparent text-zinc-100 text-sm py-3 outline-none placeholder:text-zinc-600 font-medium"
+          />
+          
+          <button
+            type="submit"
+            disabled={!text.trim() && attachedFiles.length === 0}
+            className="p-3 rounded-xl bg-zinc-100 text-zinc-950 hover:bg-white disabled:opacity-20 disabled:hover:bg-zinc-100 transition-all active:scale-95 shadow-lg group/btn"
+          >
+            <Send size={18} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
+          </button>
         </div>
-        
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Scrie o comandă pentru Neural AI..."
-          className="w-full bg-transparent text-white text-sm py-4 outline-none placeholder:text-[#444]"
-        />
-        
-        <button
-          type="submit"
-          disabled={!text.trim()}
-          className="m-2 p-2 rounded-xl bg-white text-black hover:bg-magenta-500 hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-black transition-all active:scale-95"
-        >
-          <Send size={18} />
-        </button>
       </form>
-      <div className="text-center mt-3">
-        <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-[#333]">Neural Engine v4.0 Active</span>
+      
+      <div className="flex justify-center items-center gap-4 mt-3">
+        <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.3em] text-zinc-600">
+          <Sparkles size={10} />
+          RAG-Ready Engine
+        </div>
+        <div className="w-1 h-1 rounded-full bg-zinc-800" />
+        <div className="text-[9px] font-bold uppercase tracking-[0.3em] text-zinc-600">
+          Context Aware Mode
+        </div>
       </div>
     </div>
   );

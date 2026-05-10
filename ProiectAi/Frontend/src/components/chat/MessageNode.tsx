@@ -63,7 +63,7 @@ export default function MessageNode({ message }: Props) {
         <div className={`flex flex-col ${isAI ? 'items-start' : 'items-end'} justify-center`}>
           <div className={`px-5 py-3.5 rounded-3xl text-sm leading-relaxed ${
             isAI 
-              ? 'bg-[#0a0a0a] border border-white/5 text-[#ddd] rounded-tl-sm' 
+              ? 'bg-gradient-to-br from-[#0a0a0a] to-[#1a1a1a] border border-white/5 text-[#ddd] rounded-tl-sm' 
               : 'bg-white text-black rounded-tr-sm font-medium'
           }`}>
             {isAI ? displayedText : message.content}

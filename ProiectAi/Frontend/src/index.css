@@ -1,38 +1,62 @@
 @import "tailwindcss";
 
-/* Animații personalizate */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+@layer base {
+  * {
+    @apply border-zinc-800;
+  }
+  body {
+    @apply bg-zinc-950 text-zinc-100 antialiased font-sans;
+  }
 }
 
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Background Grid Tehnic Animat */
+.bg-grid-pattern {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    linear-gradient(to right, rgba(39, 39, 42, 0.2) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(39, 39, 42, 0.2) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(circle at center, black, transparent 80%);
+  pointer-events: none;
+  z-index: 0;
 }
 
-.animate-fadeIn {
-  animation: fadeIn 0.5s ease-out forwards;
-}
-
-.animate-slideDown {
-  animation: slideDown 0.3s ease-out forwards;
-}
-
-/* Stiluri globale pentru scrollbar (Cyberpunk style) */
+/* Custom Scrollbar - Minimalist Zinc */
 ::-webkit-scrollbar {
-  width: 4px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #000000;
+  @apply bg-transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1f1f1f;
-  border-radius: 10px;
+  @apply bg-zinc-800 rounded-full transition-colors;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #ff00ff; /* Acesta este magenta pur HEX */
+  @apply bg-zinc-700;
+}
+
+/* Animații utilitare */
+.animate-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Typography Overrides pentru Code Blocks - Adaptat Tailwind v4 */
+.prose pre {
+  @apply !bg-zinc-950 !border !border-zinc-800 !rounded-xl !shadow-2xl;
+}
+
+.prose code {
+  @apply !font-mono !text-zinc-200;
 }

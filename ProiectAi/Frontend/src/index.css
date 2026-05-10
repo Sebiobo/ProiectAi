@@ -1,48 +1,62 @@
-/* src/index.css */
 @import "tailwindcss";
 
-/* Definirea temei de culori inspirată din referință */
 @layer base {
-  :root {
-    --background: #110121; /* Negru-mov foarte închis pentru fundal */
-    --foreground: #f5f5f5;
-    --card: #1a0b2e; /* Mov-închis pentru containere/sidebar */
-    --accent: #d946ef; /* Magenta electric pentru butoane/glow */
-    --accent-foreground: #ffffff;
+  * {
+    @apply border-zinc-800;
+  }
+  body {
+    @apply bg-zinc-950 text-zinc-100 antialiased font-sans;
   }
 }
 
-body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: 'Inter', system-ui, sans-serif;
-  overflow: hidden; /* Previne scroll-ul pe tot corpul site-ului */
+/* Background Grid Tehnic Animat */
+.bg-grid-pattern {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    linear-gradient(to right, rgba(39, 39, 42, 0.2) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(39, 39, 42, 0.2) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(circle at center, black, transparent 80%);
+  pointer-events: none;
+  z-index: 0;
 }
 
-/* Animația fină de intrare a mesajelor */
-@keyframes slideUpAndFade {
-  from { 
-    opacity: 0; 
-    transform: translateY(12px); 
-  }
-  to { 
-    opacity: 1; 
-    transform: translateY(0); 
-  }
-}
-
-.animate-message {
-  animation: slideUpAndFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-/* Custom Scrollbar - subțire și asortat */
+/* Custom Scrollbar - Minimalist Zinc */
 ::-webkit-scrollbar {
   width: 5px;
+  height: 5px;
 }
+
 ::-webkit-scrollbar-track {
-  background: transparent;
+  @apply bg-transparent;
 }
+
 ::-webkit-scrollbar-thumb {
-  background-color: #3b1f66;
-  border-radius: 10px;
+  @apply bg-zinc-800 rounded-full transition-colors;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-zinc-700;
+}
+
+/* Animații utilitare */
+.animate-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Typography Overrides pentru Code Blocks - Adaptat Tailwind v4 */
+.prose pre {
+  @apply !bg-zinc-950 !border !border-zinc-800 !rounded-xl !shadow-2xl;
+}
+
+.prose code {
+  @apply !font-mono !text-zinc-200;
 }

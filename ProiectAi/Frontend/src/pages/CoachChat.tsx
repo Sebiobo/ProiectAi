@@ -1,37 +1,141 @@
 import Sidebar from '../components/sidebar/Sidebar';
 import MessageArea from '../components/chat/MessageArea';
 import ChatInput from '../components/chat/ChatInput';
+import WorkspacePanel from '../components/chat/WorkspacePanel';
+import { useChatStore } from '../store/useChatStore';
+import { BookOpen, BarChart3, HelpCircle, GraduationCap } from 'lucide-react';
 
 export default function CoachChat() {
+  const activeArtifact = useChatStore((state) => state.activeArtifact);
+  const selectedYear = useChatStore((state) => state.selectedYear);
+  const selectedSubject = useChatStore((state) => state.selectedSubject);
+
   return (
-    // Layout-ul global flexibil, ecran complet, fundal negru profund
-    <div className="flex h-screen bg-[#000000] text-[#ededed] font-sans overflow-hidden antialiased">
-      
-      {/* Bara Laterală Stânga */}
+    <div className="relative flex h-screen bg-background text-foreground font-sans overflow-hidden">
+      {/* Background Grid Tehnic (definit in index.css) */}
+      <div className="bg-grid-pattern" />
+
+      {/* Coloana 1: Sidebar (Navigare Ani & Materii) */}
       <Sidebar />
 
-      {/* Zona principală din Dreapta */}
-      <div className="flex-1 flex flex-col relative h-full bg-[#000000]">
+      {/* Container Principal pentru Coloanele 2 și 3 */}
+      <main className="flex-1 flex overflow-hidden relative z-10">
         
-        {/* Header-ul minimalist al zonei de chat */}
-        <header className="flex items-center justify-between px-6 py-4 border-b border-[#1f1f1f]">
-          <h2 className="text-sm font-medium text-[#888] tracking-tight">Terminal Conexiune AI</h2>
-          {/* Aici putem pune în viitor setări de model (ex: GPT-4, Claude 3) */}
-          <div className="px-2 py-1 bg-[#111] border border-[#222] rounded text-[10px] font-bold text-[#666]">
-            MODEL: COACH-V1
+        {/* Coloana 2: Zona de Chat (Fluidă) */}
+        <div className={`flex flex-col h-full border-r border-zinc-800/50 transition-all duration-500 ease-in-out ${activeArtifact ? 'w-1/2' : 'flex-1'}`}>
+          
+          {/* Header Chat - Context Academic */}
+          <header className="h-[73px] flex items-center justify-between px-8 border-b border-zinc-800/50 bg-background/50 backdrop-blur-md shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-zinc-900 border border-zinc-800 rounded-lg">
+                <GraduationCap size={18} className="text-zinc-400" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-zinc-100 tracking-tight">
+                  {selectedSubject || 'Asistent General'}
+                </h2>
+                <p className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] font-medium">
+                  Anul {selectedYear} • Sesiune Activă
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-3 py-1 bg-zinc-900/50 border border-zinc-800 rounded-full">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Neural v4.0</span>
+              </div>
+            </div>
+          </header>
+
+          {/* Zona de Mesaje */}
+          <MessageArea />
+
+          {/* Input Chat */}
+          <div className="p-6 bg-gradient-to-t from-background via-background to-transparent">
+            <ChatInput />
           </div>
-        </header>
-
-        {/* Zona dinamică unde se desenează conversația */}
-        <MessageArea />
-
-        {/* Zona unde utilizatorul tastează și invocă șabloanele */}
-        <div className="p-6 pt-2 bg-linear-to-t from-[#000000] via-[#000000] to-transparent shrink-0">
-          <ChatInput />
         </div>
+
+        {/* Coloana 3: Panou Lateral (Resources sau Workspace) */}
+        <div className={`${activeArtifact ? 'w-1/2' : 'w-[320px]'} h-full transition-all duration-500 ease-in-out hidden lg:block`}>
+          {activeArtifact ? (
+            <WorkspacePanel />
+          ) : (
+            <DefaultResourcesPanel />
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+/**
+ * Componentă internă pentru panoul de resurse implicit (Coloana 3)
+ * Apare atunci când nu este deschis un Artifact de cod.
+ */
+function DefaultResourcesPanel() {
+  return (
+    <div className="flex flex-col h-full bg-zinc-950/30 backdrop-blur-sm p-6 overflow-y-auto custom-scrollbar animate-in">
+      <div className="space-y-8">
         
+        {/* Secțiunea FAQ */}
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <HelpCircle size={16} className="text-zinc-500" />
+            <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em]">Întrebări Frecvente</h3>
+          </div>
+          <div className="space-y-2">
+            {['Structură examen', 'Resurse bibliografice', 'Metodă calcul notă'].map((q) => (
+              <button 
+                key={q}
+                className="w-full text-left p-3 rounded-xl bg-zinc-900/50 border border-zinc-800 hover:border-zinc-700 transition-colors group"
+              >
+                <span className="text-xs text-zinc-300 group-hover:text-zinc-100 transition-colors">{q}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Secțiunea Resurse */}
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <BookOpen size={16} className="text-zinc-500" />
+            <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em]">Materiale Suport</h3>
+          </div>
+          <div className="space-y-3">
+            {[
+              { title: 'Syllabus Curs', type: 'PDF' },
+              { title: 'Exemple Laborator', type: 'ZIP' },
+              { title: 'Note de Curs v2', type: 'DOCX' }
+            ].map((res) => (
+              <div key={res.title} className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/30 border border-zinc-800/50">
+                <span className="text-xs text-zinc-400 font-medium">{res.title}</span>
+                <span className="text-[9px] font-bold text-zinc-600 bg-zinc-800 px-1.5 py-0.5 rounded uppercase">{res.type}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Statistici Sesiune */}
+        <section className="pt-6 border-t border-zinc-800/50">
+          <div className="flex items-center gap-2 mb-4">
+            <BarChart3 size={16} className="text-zinc-500" />
+            <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em]">Analiză Sesiune</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-4 rounded-2xl bg-zinc-900/50 border border-zinc-800 text-center">
+              <div className="text-xl font-black text-zinc-100">12</div>
+              <div className="text-[9px] text-zinc-500 uppercase font-bold mt-1 tracking-tighter">Concepte Clarificate</div>
+            </div>
+            <div className="p-4 rounded-2xl bg-zinc-900/50 border border-zinc-800 text-center">
+              <div className="text-xl font-black text-zinc-100">85%</div>
+              <div className="text-[9px] text-zinc-500 uppercase font-bold mt-1 tracking-tighter">Progres Materie</div>
+            </div>
+          </div>
+        </section>
+
       </div>
-      
     </div>
   );
 }

@@ -1,4 +1,4 @@
-from cautare_cloud import cauta_in_materie
+from Backend.baza_de_date.cautare_cloud import cauta_in_materie
 
 print("🌐 Conectare la sistemul ULBS Coach...\n")
 

@@ -2,9 +2,13 @@ import os
 import docx
 from pinecone import Pinecone
 from pypdf import PdfReader
+from dotenv import load_dotenv
 
-# 1. Conectarea la Cloud
-PINECONE_API_KEY = "pcsk_6dNx7a_nSmrWP1zv9eKwVX6HPUxLFJUE14pp8jT48iCWdYBXirx8EzYF8o6JEoxdwPNpQ"
+# Încărcăm variabilele secrete din fișierul .env
+load_dotenv()
+
+# 1. Conectarea la Cloud (Securizată)
+PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 INDEX_NAME = "ulbs-coach"
 
 pc = Pinecone(api_key=PINECONE_API_KEY)

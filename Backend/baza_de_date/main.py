@@ -1,6 +1,8 @@
 import os
 import shutil
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, Depends, HTTPException
+from sqlalchemy.orm import Session
+from database import get_db, engine
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from cautare_cloud import cauta_in_materie
@@ -8,7 +10,12 @@ from cautare_cloud import cauta_in_materie
 from procesare_fisiere import proceseaza_si_incarca
 from groq import Groq
 from dotenv import load_dotenv
+import models
+import schemas
+import crud
+from database import engine
 
+models.Base.metadata.create_all(bind=engine)
 load_dotenv()
 
 app = FastAPI()
@@ -107,3 +114,30 @@ async def upload_endpoint(
     else:
         print("❌ [UPLOAD] Format invalid.")
         return {"reply": "Eroare: Te rog să urci doar fișiere PDF sau DOCX."}
+
+    # ==========================================
+# RUTA PENTRU ÎNREGISTRARE UTILIZATORI
+# ==========================================
+
+
+@app.post("/api/inregistrare", response_model=schemas.UtilizatorResponse)
+def inregistrare_endpoint(
+    utilizator: schemas.UtilizatorCreate,
+    db: Session = Depends(get_db)
+):
+    print(f"👤 [AUTH] Cerere înregistrare pentru: {utilizator.email}")
+
+    # 1. Verificăm dacă email-ul există deja
+    user_existent = crud.get_utilizator_by_email(db, email=utilizator.email)
+    if user_existent:
+        print("❌ [AUTH] Eroare: Email-ul există deja!")
+        raise HTTPException(
+            status_code=400, detail="Email-ul este deja înregistrat!")
+
+    # 2. Creăm utilizatorul prin CRUD
+    user_nou = crud.create_utilizator(db=db, utilizator=utilizator)
+    print(f"✅ [AUTH] Utilizator creat cu succes! ID: {user_nou.id}")
+
+    # 3. FastAPI ia "user_nou", observă "response_model=schemas.UtilizatorResponse"
+    # și taie automat parola înainte să trimită JSON-ul la Frontend!
+    return user_nou

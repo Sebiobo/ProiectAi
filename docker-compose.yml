@@ -16,9 +16,22 @@ services:
       - N8N_PROTOCOL=http
       - NODE_ENV=production
 
+  backend:
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    container_name: tutor_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./Backend/.env
+
   frontend:
     build: ./Frontend
     container_name: tutor_frontend
     restart: always
     ports:
-    - "8081:80"
+      - "8081:80"
+    depends_on:
+      - backend

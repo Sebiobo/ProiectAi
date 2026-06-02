@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-import models
-import schemas
+import Backend.app.baza_de_date.models as models
+import Backend.app.baza_de_date.schemas as schemas
 
 
 def get_utilizator_by_email(db: Session, email: str):

@@ -25,4 +25,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-requirements.txt
+requirements.txt.DS_Store

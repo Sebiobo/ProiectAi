@@ -1,0 +1,7 @@
+.venv
+__pycache__
+*.pyc
+*.pyo
+.env
+app/db_ulbs
+app/baza_de_date/cursuri_pdf

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { loginUser } from '../services/authService';
 
 export type Role = 'user' | 'ai' | 'system';
 
@@ -38,8 +39,9 @@ export interface Artifact {
 interface ChatState {
   // --- AUTH STATE ---
   isAuthenticated: boolean;
-  user: { username: string } | null;
-  login: (username: string, password: string) => boolean;
+  token: string | null;
+  user: { email: string; full_name?: string | null } | null;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
 
   // --- ACADEMIC CONTEXT STATE ---
@@ -71,15 +73,13 @@ interface ChatState {
 export const useChatStore = create<ChatState>((set) => ({
   // --- AUTH ---
   isAuthenticated: false,
+  token: null,
   user: null,
-  login: (username, password) => {
-    if (username === 'admin' && password === 'admin') {
-      set({ isAuthenticated: true, user: { username: 'admin' } });
-      return true;
-    }
-    return false;
+  login: async (email, password) => {
+    const data = await loginUser({ email, password });
+    set({ isAuthenticated: true, token: data.access_token, user: { email } });
   },
-  logout: () => set({ isAuthenticated: false, user: null }),
+  logout: () => set({ isAuthenticated: false, token: null, user: null }),
 
   // --- ACADEMIC CONTEXT ---
   selectedYear: '1',

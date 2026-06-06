@@ -1,11 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { useChatStore } from '../../store/useChatStore';
-import { simulateAIResponse } from '../../services/aiService';
+import { simulateAIResponse, uploadDocument } from '../../services/aiService';
 import { Send, Terminal, Sparkles, Paperclip, X, FileText, Image as ImageIcon } from 'lucide-react';
 
 export default function ChatInput() {
   const [text, setText] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const activeChatId = useChatStore((state) => state.activeChatId);
@@ -28,17 +29,39 @@ export default function ChatInput() {
     if ((!text.trim() && attachedFiles.length === 0) || !activeChatId) return;
 
     const currentLeafId = activeChat?.currentLeafId || null;
-    
-    // Includem informații despre fișiere în textul mesajului (pentru simulare)
+
     let messageContent = text;
+
     if (attachedFiles.length > 0) {
-      const fileList = attachedFiles.map(f => `[Fișier: ${f.name}]`).join(' ');
-      messageContent = `${messageContent}\n\n*Atașamente: ${fileList}*`.trim();
+      setIsUploading(true);
+      const uploadedNames: string[] = [];
+      const failedNames: string[] = [];
+
+      await Promise.all(
+        attachedFiles.map(async (file) => {
+          try {
+            await uploadDocument(file);
+            uploadedNames.push(file.name);
+          } catch {
+            failedNames.push(file.name);
+          }
+        })
+      );
+
+      setIsUploading(false);
+
+      if (uploadedNames.length > 0) {
+        const fileList = uploadedNames.map(n => `[Fișier încărcat: ${n}]`).join(' ');
+        messageContent = `${messageContent}\n\n*${fileList}*`.trim();
+      }
+      if (failedNames.length > 0) {
+        const errList = failedNames.map(n => `[Eroare upload: ${n}]`).join(' ');
+        messageContent = `${messageContent}\n\n*${errList}*`.trim();
+      }
     }
 
     const userMsgId = addMessage(activeChatId, messageContent, 'user', currentLeafId);
-    
-    // Resetăm input-ul și fișierele
+
     setText('');
     setAttachedFiles([]);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -118,10 +141,14 @@ export default function ChatInput() {
           
           <button
             type="submit"
-            disabled={!text.trim() && attachedFiles.length === 0}
+            disabled={isUploading || (!text.trim() && attachedFiles.length === 0)}
             className="p-3 rounded-xl bg-zinc-100 text-zinc-950 hover:bg-white disabled:opacity-20 disabled:hover:bg-zinc-100 transition-all active:scale-95 shadow-lg group/btn"
           >
-            <Send size={18} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
+            {isUploading ? (
+              <span className="text-xs font-semibold px-1">...</span>
+            ) : (
+              <Send size={18} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
+            )}
           </button>
         </div>
       </form>

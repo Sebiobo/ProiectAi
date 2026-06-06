@@ -1,5 +1,22 @@
 import { useChatStore } from "../store/useChatStore";
 
+export const uploadDocument = async (file: File): Promise<{ id: number; filename: string; status: string }> => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch("http://127.0.0.1:8000/api/documents/upload", {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.detail || `Upload eșuat pentru ${file.name}`);
+  }
+
+  return response.json();
+};
+
 export const simulateAIResponse = async (
   chatId: string,
   userText: string,

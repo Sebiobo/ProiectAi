@@ -1,5 +1,12 @@
 import { create } from 'zustand';
 import { loginUser } from '../services/authService';
+import {
+  fetchUserChats,
+  fetchChatMessages,
+  createBackendChat,
+  fetchUserDocuments,
+  deleteUserDocument
+} from '../services/aiService';
 
 export type Role = 'user' | 'ai' | 'system';
 
@@ -61,16 +68,44 @@ interface ChatState {
   folders: Record<string, Folder>;
   activeChatId: string | null;
 
-  setActiveChat: (chatId: string) => void;
+  setActiveChat: (chatId: string) => Promise<void>;
   createFolder: (name: string) => void;
-  createChat: (folderId?: string | null, year?: string | null, subject?: string | null) => string;
+  createChat: (folderId?: string | null, year?: string | null, subject?: string | null) => Promise<string>;
   addMessage: (chatId: string, content: string, role: Role, parentId: string | null) => string;
   updateMessageStatus: (chatId: string, messageId: string, status: MessageNode['status']) => void;
   updateMessageContent: (chatId: string, messageId: string, newContent: string) => void;
   switchToBranch: (chatId: string, messageId: string) => void;
+
+  // --- DOCUMENTS STATE ---
+  documents: any[];
+  fetchDocuments: () => Promise<void>;
+  deleteDocument: (id: number) => Promise<void>;
 }
 
-export const useChatStore = create<ChatState>((set) => ({
+// Helpers for tree mapping
+const mapMessagesToTree = (backendMsgs: any[]): { messages: Record<string, MessageNode>, currentLeafId: string | null } => {
+  const messages: Record<string, MessageNode> = {};
+  if (backendMsgs.length === 0) {
+    return { messages, currentLeafId: null };
+  }
+  for (let i = 0; i < backendMsgs.length; i++) {
+    const msg = backendMsgs[i];
+    const parentId = i > 0 ? String(backendMsgs[i - 1].id) : null;
+    const childrenIds = i < backendMsgs.length - 1 ? [String(backendMsgs[i + 1].id)] : [];
+    messages[String(msg.id)] = {
+      id: String(msg.id),
+      role: msg.role as Role,
+      content: msg.content,
+      parentId,
+      childrenIds,
+      status: 'done'
+    };
+  }
+  const currentLeafId = String(backendMsgs[backendMsgs.length - 1].id);
+  return { messages, currentLeafId };
+};
+
+export const useChatStore = create<ChatState>((set, get) => ({
   // --- AUTH ---
   isAuthenticated: false,
   token: null,
@@ -78,8 +113,54 @@ export const useChatStore = create<ChatState>((set) => ({
   login: async (email, password) => {
     const data = await loginUser({ email, password });
     set({ isAuthenticated: true, token: data.access_token, user: { email } });
+
+    // Load chats and documents on login
+    try {
+      const backendChats = await fetchUserChats();
+      const chatsRecord: Record<string, Chat> = {};
+      for (const bc of backendChats) {
+        chatsRecord[String(bc.id)] = {
+          id: String(bc.id),
+          title: bc.title || 'Conversație',
+          folderId: null,
+          year: null,
+          subject: null,
+          messages: {},
+          currentLeafId: null,
+          createdAt: new Date(bc.created_at).getTime(),
+          updatedAt: new Date(bc.created_at).getTime(),
+        };
+      }
+      set({ chats: chatsRecord });
+
+      if (backendChats.length > 0) {
+        const lastChatId = String(backendChats[0].id);
+        set({ activeChatId: lastChatId });
+        const msgs = await fetchChatMessages(Number(lastChatId));
+        const { messages, currentLeafId } = mapMessagesToTree(msgs);
+        set((state) => ({
+          chats: {
+            ...state.chats,
+            [lastChatId]: {
+              ...state.chats[lastChatId],
+              messages,
+              currentLeafId
+            }
+          }
+        }));
+      }
+    } catch (err) {
+      console.error("Eroare la preluarea inițială a chat-urilor:", err);
+    }
+
+    try {
+      const docs = await fetchUserDocuments();
+      set({ documents: docs });
+    } catch (err) {
+      console.error("Eroare la preluarea inițială a documentelor:", err);
+    }
   },
-  logout: () => set({ isAuthenticated: false, token: null, user: null }),
+  logout: () => set({ isAuthenticated: false, token: null, user: null, chats: {}, activeChatId: null, documents: [] }),
 
   // --- ACADEMIC CONTEXT ---
   selectedYear: '1',
@@ -103,7 +184,27 @@ export const useChatStore = create<ChatState>((set) => ({
   },
   activeChatId: null,
 
-  setActiveChat: (chatId) => set({ activeChatId: chatId }),
+  setActiveChat: async (chatId) => {
+    set({ activeChatId: chatId });
+    if (chatId) {
+      try {
+        const msgs = await fetchChatMessages(Number(chatId));
+        const { messages, currentLeafId } = mapMessagesToTree(msgs);
+        set((state) => ({
+          chats: {
+            ...state.chats,
+            [chatId]: {
+              ...state.chats[chatId],
+              messages,
+              currentLeafId
+            }
+          }
+        }));
+      } catch (err) {
+        console.error("Eroare la preluarea mesajelor chat-ului:", err);
+      }
+    }
+  },
 
   createFolder: (name) => {
     const id = crypto.randomUUID();
@@ -112,25 +213,49 @@ export const useChatStore = create<ChatState>((set) => ({
     }));
   },
 
-  createChat: (folderId = null, year = null, subject = null) => {
-    const id = crypto.randomUUID();
-    const newChat: Chat = {
-      id,
-      title: 'Conversație nouă',
-      folderId,
-      year,
-      subject,
-      messages: {},
-      currentLeafId: null,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
+  createChat: async (folderId = null, year = null, subject = null) => {
+    const title = subject ? `${subject} - Anul ${year}` : "Conversație Nouă";
+    try {
+      const newBc = await createBackendChat(title, null);
+      const newChatId = String(newBc.id);
+      const newChat: Chat = {
+        id: newChatId,
+        title: newBc.title,
+        folderId,
+        year,
+        subject,
+        messages: {},
+        currentLeafId: null,
+        createdAt: new Date(newBc.created_at).getTime(),
+        updatedAt: new Date(newBc.created_at).getTime(),
+      };
 
-    set((state) => ({
-      chats: { ...state.chats, [id]: newChat },
-      activeChatId: id,
-    }));
-    return id;
+      set((state) => ({
+        chats: { ...state.chats, [newChatId]: newChat },
+        activeChatId: newChatId,
+      }));
+      return newChatId;
+    } catch (err) {
+      console.error("Eroare la crearea chat-ului pe backend:", err);
+      // Fallback local în caz de eroare de rețea
+      const id = crypto.randomUUID();
+      const newChat: Chat = {
+        id,
+        title,
+        folderId,
+        year,
+        subject,
+        messages: {},
+        currentLeafId: null,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+      set((state) => ({
+        chats: { ...state.chats, [id]: newChat },
+        activeChatId: id,
+      }));
+      return id;
+    }
   },
 
   addMessage: (chatId, content, role, parentId) => {
@@ -224,5 +349,27 @@ export const useChatStore = create<ChatState>((set) => ({
         }
       };
     });
+  },
+
+  // --- DOCUMENTS ---
+  documents: [],
+  fetchDocuments: async () => {
+    if (!get().isAuthenticated) return;
+    try {
+      const docs = await fetchUserDocuments();
+      set({ documents: docs });
+    } catch (err) {
+      console.error("Eroare la preluarea documentelor:", err);
+    }
+  },
+  deleteDocument: async (id) => {
+    try {
+      await deleteUserDocument(id);
+      set((state) => ({
+        documents: state.documents.filter((d) => d.id !== id),
+      }));
+    } catch (err) {
+      console.error("Eroare la ștergerea documentului:", err);
+    }
   }
 }));

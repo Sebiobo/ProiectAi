@@ -9,8 +9,14 @@ from app.config import settings
 from app.models.documents import Document
 from app.models.document_chunks import DocumentChunk
 
-_pc = Pinecone(api_key=settings.PINECONE_API_KEY)
-_index = _pc.Index(settings.PINECONE_INDEX_NAME)
+_pc = None
+_index = None
+if settings.PINECONE_API_KEY and settings.PINECONE_API_KEY != "your_pinecone_api_key_here":
+    try:
+        _pc = Pinecone(api_key=settings.PINECONE_API_KEY)
+        _index = _pc.Index(settings.PINECONE_INDEX_NAME)
+    except Exception as e:
+        print(f"Eroare la inițializarea Pinecone: {e}")
 
 CHUNK_SIZE = 400
 CHUNK_OVERLAP = 50
@@ -85,7 +91,10 @@ def process_document(db: Session, document: Document, file_bytes: bytes) -> None
                     db.add(db_chunk)
                     chunk_index += 1
 
-                _index.upsert(vectors=vectors_to_upsert)
+                if _index:
+                    _index.upsert(vectors=vectors_to_upsert)
+                else:
+                    print("Pinecone index is not initialized. Skipping vector upsert.")
 
         document.status = "processed"
     except Exception:

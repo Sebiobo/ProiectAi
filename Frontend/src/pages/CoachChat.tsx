@@ -75,6 +75,9 @@ export default function CoachChat() {
  * Apare atunci când nu este deschis un Artifact de cod.
  */
 function DefaultResourcesPanel() {
+  const documents = useChatStore((state) => state.documents);
+  const deleteDocument = useChatStore((state) => state.deleteDocument);
+
   return (
     <div className="flex flex-col h-full bg-zinc-950/30 backdrop-blur-sm p-6 overflow-y-auto custom-scrollbar animate-in">
       <div className="space-y-8">
@@ -104,16 +107,37 @@ function DefaultResourcesPanel() {
             <h3 className="text-xs font-black text-zinc-400 uppercase tracking-[0.2em]">Materiale Suport</h3>
           </div>
           <div className="space-y-3">
-            {[
-              { title: 'Syllabus Curs', type: 'PDF' },
-              { title: 'Exemple Laborator', type: 'ZIP' },
-              { title: 'Note de Curs v2', type: 'DOCX' }
-            ].map((res) => (
-              <div key={res.title} className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/30 border border-zinc-800/50">
-                <span className="text-xs text-zinc-400 font-medium">{res.title}</span>
-                <span className="text-[9px] font-bold text-zinc-600 bg-zinc-800 px-1.5 py-0.5 rounded uppercase">{res.type}</span>
+            {documents && documents.length > 0 ? (
+              documents.map((doc: any) => (
+                <div key={doc.id} className="flex items-center justify-between p-3 rounded-xl bg-zinc-900/30 border border-zinc-800/50">
+                  <div className="flex flex-col min-w-0 flex-1 pr-2">
+                    <span className="text-xs text-zinc-300 font-medium truncate" title={doc.filename}>
+                      {doc.filename}
+                    </span>
+                    <span className="text-[9px] text-zinc-500">
+                      Status: <span className={doc.status === 'processed' ? 'text-emerald-500' : 'text-amber-500'}>{doc.status}</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[9px] font-bold text-zinc-500 bg-zinc-900 px-1.5 py-0.5 rounded uppercase">
+                      {doc.file_type ? doc.file_type.split('/')[1]?.toUpperCase() : 'PDF'}
+                    </span>
+                    <button 
+                      onClick={() => deleteDocument(doc.id)}
+                      className="text-[9px] text-red-400 hover:text-red-300 hover:bg-red-500/10 px-1.5 py-0.5 rounded transition-all font-bold"
+                      title="Șterge Document"
+                    >
+                      Șterge
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-4 rounded-xl border border-dashed border-zinc-800 text-center text-zinc-500">
+                <p className="text-xs">Niciun document încărcat în această sesiune.</p>
+                <p className="text-[10px] text-zinc-600 mt-1">Atașează un fișier folosind butonul din chat pentru a-l încărca.</p>
               </div>
-            ))}
+            )}
           </div>
         </section>
 

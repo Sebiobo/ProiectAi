@@ -178,10 +178,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   // --- CHAT ---
   chats: {},
-  folders: {
-    'folder-1': { id: 'folder-1', name: 'Sesiuni Salvo' },
-    'folder-2': { id: 'folder-2', name: 'Arhivă' }
-  },
+  folders: {},
   activeChatId: null,
 
   setActiveChat: async (chatId) => {

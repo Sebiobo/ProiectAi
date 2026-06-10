@@ -149,11 +149,11 @@ function DefaultResourcesPanel() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="p-4 rounded-2xl bg-zinc-900/50 border border-zinc-800 text-center">
-              <div className="text-xl font-black text-zinc-100">12</div>
+              <div className="text-xl font-black text-zinc-100">—</div>
               <div className="text-[9px] text-zinc-500 uppercase font-bold mt-1 tracking-tighter">Concepte Clarificate</div>
             </div>
             <div className="p-4 rounded-2xl bg-zinc-900/50 border border-zinc-800 text-center">
-              <div className="text-xl font-black text-zinc-100">85%</div>
+              <div className="text-xl font-black text-zinc-100">—</div>
               <div className="text-[9px] text-zinc-500 uppercase font-bold mt-1 tracking-tighter">Progres Materie</div>
             </div>
           </div>
